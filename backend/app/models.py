@@ -83,8 +83,12 @@ class SensorReadingBase(BaseModel):
     humidity: float = Field(..., ge=0, le=100, description="Humidity percentage")
     rain_sensor: int = Field(..., ge=0, le=1, description="Rain sensor (0=no rain, 1=rain)")
 
-class SensorReadingCreate(SensorReadingBase):
+class SensorReadingCreate(BaseModel):
     device_id: str
+    soil_moisture: float = Field(..., ge=0, le=100, description="Soil moisture percentage")
+    temperature: Optional[float] = Field(None, ge=-50, le=60, description="Temperature in Celsius")
+    humidity: Optional[float] = Field(None, ge=0, le=100, description="Humidity percentage")
+    rain_sensor: Optional[int] = Field(None, ge=0, le=1, description="Rain sensor (0=no rain, 1=rain)")
 
 class SensorReading(SensorReadingBase):
     id: str

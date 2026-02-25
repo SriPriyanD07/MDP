@@ -106,7 +106,7 @@ async def auto_pump_control(
         )
     
     # Get current weather
-    weather = weather_service.get_current_weather(city=device.get("location", "London"))
+    weather = await weather_service.get_current_weather(city=device.get("location", "London"))
     
     if not weather:
         # Use default values if weather unavailable

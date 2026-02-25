@@ -3,6 +3,7 @@ from typing import List
 from app.models import SensorReadingCreate, SensorReading, User
 from app.auth import get_current_user
 from app.database import get_database
+from app.weather_service import weather_service
 from datetime import datetime, timedelta
 from bson import ObjectId
 
@@ -27,14 +28,27 @@ async def create_sensor_reading(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Device not found or does not belong to user"
         )
+        
+    # Get weather data for missing sensor values based on device location
+    weather_data = await weather_service.get_current_weather(city=device.get("location", "London"))
+    
+    # Determine defaults or parsed data
+    temperature = reading.temperature if reading.temperature is not None else weather_data.temperature
+    humidity = reading.humidity if reading.humidity is not None else weather_data.humidity
+    
+    # Rain sensor logic: if not provided by hardware, assume 1 if rain prob > 50%
+    if reading.rain_sensor is not None:
+        rain_sensor = reading.rain_sensor
+    else:
+        rain_sensor = 1 if weather_data.rain_probability > 50 else 0
     
     # Create reading document
     reading_doc = {
         "device_id": reading.device_id,
         "soil_moisture": reading.soil_moisture,
-        "temperature": reading.temperature,
-        "humidity": reading.humidity,
-        "rain_sensor": reading.rain_sensor,
+        "temperature": temperature,
+        "humidity": humidity,
+        "rain_sensor": rain_sensor,
         "timestamp": datetime.utcnow()
     }
     
@@ -72,10 +86,10 @@ async def get_latest_readings(
         SensorReading(
             id=str(r["_id"]),
             device_id=r["device_id"],
-            soil_moisture=r["soil_moisture"],
-            temperature=r["temperature"],
-            humidity=r["humidity"],
-            rain_sensor=r["rain_sensor"],
+            soil_moisture=r.get("soil_moisture", 0.0),
+            temperature=r.get("temperature", 25.0),
+            humidity=r.get("humidity", 50.0),
+            rain_sensor=r.get("rain_sensor", 0),
             timestamp=r["timestamp"]
         )
         for r in readings
@@ -113,10 +127,10 @@ async def get_device_readings(
         SensorReading(
             id=str(r["_id"]),
             device_id=r["device_id"],
-            soil_moisture=r["soil_moisture"],
-            temperature=r["temperature"],
-            humidity=r["humidity"],
-            rain_sensor=r["rain_sensor"],
+            soil_moisture=r.get("soil_moisture", 0.0),
+            temperature=r.get("temperature", 25.0),
+            humidity=r.get("humidity", 50.0),
+            rain_sensor=r.get("rain_sensor", 0),
             timestamp=r["timestamp"]
         )
         for r in readings
@@ -159,10 +173,10 @@ async def get_historical_readings(
         SensorReading(
             id=str(r["_id"]),
             device_id=r["device_id"],
-            soil_moisture=r["soil_moisture"],
-            temperature=r["temperature"],
-            humidity=r["humidity"],
-            rain_sensor=r["rain_sensor"],
+            soil_moisture=r.get("soil_moisture", 0.0),
+            temperature=r.get("temperature", 25.0),
+            humidity=r.get("humidity", 50.0),
+            rain_sensor=r.get("rain_sensor", 0),
             timestamp=r["timestamp"]
         )
         for r in readings

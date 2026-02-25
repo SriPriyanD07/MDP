@@ -66,20 +66,24 @@ class MLService:
             
             # Use ML model if available
             if self.model is not None and self.scaler is not None:
-                # Scale features
-                features_scaled = self.scaler.transform(features)
-                
-                # Make prediction
-                prediction = self.model.predict(features_scaled)[0]
-                
-                # Get prediction probability if available
                 try:
-                    probabilities = self.model.predict_proba(features_scaled)[0]
-                    confidence = float(max(probabilities))
-                except:
-                    confidence = 0.85  # Default confidence
-                
-                predicted_class = int(prediction)
+                    # Scale features
+                    features_scaled = self.scaler.transform(features)
+                    
+                    # Make prediction
+                    prediction = self.model.predict(features_scaled)[0]
+                    
+                    # Get prediction probability if available
+                    try:
+                        probabilities = self.model.predict_proba(features_scaled)[0]
+                        confidence = float(max(probabilities))
+                    except:
+                        confidence = 0.85  # Default confidence
+                    
+                    predicted_class = int(prediction)
+                except Exception as model_err:
+                    print(f"⚠️ ML Prediction error: {model_err}, falling back to rule-based")
+                    predicted_class, confidence = self._rule_based_prediction(input_data)
             else:
                 # Rule-based fallback prediction
                 predicted_class, confidence = self._rule_based_prediction(input_data)
